@@ -6,6 +6,7 @@ import json
 import yara
 import matplotlib.pyplot
 import shutil
+import re
 
 def check_path(path):
     return (os.path.exists(path.split('/')[:-1]) or os.path.exists(path.split('\\')[:-1])) and os.access(path.split('/')[:-1], os.F_OK)
@@ -34,7 +35,7 @@ def list_short_packets(cap, extract):
 def print_packet(packet, cap, extract):
     if extract:
         sys.stdout = open(extract, 'w') 
-    cap[packet].show()
+    cap[int(packet)].show()
     if extract:
         sys.stdout.close()
         sys.stdout = sys.__stdout__
@@ -72,7 +73,7 @@ def display_communication(filename, extract, protocol = ''):
 6) UDP
 7) USB
 8) Wlan(IEEE 802.11)
->""")[0]
+> """)[0]
             if choose.isdigit() and int(choose) in range(1, 9):
                 out = os.popen(f"tshark -r {filename} -z conv,{PROTOCOLS[int(choose)-1]}").read()
                 break
@@ -83,15 +84,13 @@ def display_communication(filename, extract, protocol = ''):
             out = os.popen(f"tshark -r {filename} -z conv,{protocol}").read()
         else:
             print("Неверный протокол")
-    out = out.split("=")
-    new_out = [] 
-    for i in out:
-        if i != '' and i != '\n':
-            new_out.append(i)
-    out = new_out[:]
+    out = re.split("===+", out)
     if extract:
         sys.stdout = open(extract, 'w') 
-    print(out[1])
+    if out[1].split('\n')[-3:] == ['Node 0: :0', 'Node 1: :0', '']:
+        print('Нечего не найдено')
+    else:
+        print(out[1])
     if extract:
         sys.stdout.close()
         sys.stdout = sys.__stdout__
@@ -154,7 +153,7 @@ def endpointsfunc(filename, extract, protocol=''):
 6) UDP
 7) USB
 8) Wlan(IEEE 802.11)
->""")[0]
+> """)[0]
             if choose.isdigit() and int(choose) in range(1, 9):
                 out = os.popen(f"tshark -r {filename} -z endpoints,{PROTOCOLS[int(choose)-1]}").read()
                 break
@@ -165,15 +164,13 @@ def endpointsfunc(filename, extract, protocol=''):
             out = os.popen(f"tshark -r {filename} -z endpoints,{protocol}").read()
         else:
             print("Неверный протокол")
-    out = out.split("=")
-    new_out = [] 
-    for i in out:
-        if i != '' and i != '\n':
-            new_out.append(i)
-    out = new_out[:]
+    out = re.split("===+", out)
     if extract:
         sys.stdout = open(extract, 'w') 
-    print(out[1])
+    if out[1].split('\n')[-3:] == ['Node 0: :0', 'Node 1: :0', '']:
+        print('Нечего не найдено')
+    else:
+        print(out[1])
     if extract:
         sys.stdout.close()
         sys.stdout = sys.__stdout__
@@ -221,16 +218,11 @@ hex, ascii, ebcdic, raw
             print('Неверное количество элементов(3).')
     while True:
         out = os.popen(f'tshark -r {filename} -z "follow,{",".join(streamsl)}"').read()
-        out = out.split("=")
-        new_out = [] 
-        for i in out:
-            if i != '' and i != '\n':
-                new_out.append(i)
-        out = new_out[:]
-        if out[-1].split('\n')[-3:] == ['Node 0: :0', 'Node 1: :0', '']:
+        out = re.split("===+", out)
+        if out[1].split('\n')[-3:] == ['Node 0: :0', 'Node 1: :0', '']:
             print('Нечего не найдено')
         else:
-            print(out[-1])
+            print(out[1])
         print(f'Поток номер {streamsl[2]}')
         choose = ''
         if extract:
